@@ -179,14 +179,8 @@ def log_graph(log, wheelRadius, DBM):
 def main():
     print("Starting...")
 
-    graph_type = 'graph'
-
-    if graph_type == 'log':
-        with open('Tools/Data/Logs/runtime.log', 'r') as file:
-            log_graph(eval(file.read()), 8.16, 9.5)
-    else:
-        with open('Tools/Data/graph.data', 'r') as file:
-            graph(eval(file.read()))
+    with open('Data/Graphs/graph.data', 'r') as file:
+        graph(eval(file.read()))
 
     print("Done!")
 
