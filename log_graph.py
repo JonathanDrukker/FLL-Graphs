@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-from math import degrees, pi
-from csv import DictReader
+from math import pi, degrees
 import os
 
 
@@ -12,19 +11,32 @@ def log_graph(log, wheelRadius, DBM, waypoints=None):
     wheelCircumference = 2 * pi * wheelRadius
 
     # Reformatting log
-    _log = {}
-    for key, value in log[0].items():
-        if isinstance(value, list) or isinstance(value, tuple):
-            _log[key] = [[] for _ in range(len(value))]
+    tmp = log
+    log = {"time": [], "x": [], "y": [], "theata": [], "V": [[], []], "VlT": [], "VrT": []}
+    for spline in tmp:
+        for timestamp in spline:
+            log["time"].append(timestamp[0])
+            log["x"].append(timestamp[1])
+            log["y"].append(timestamp[2])
+            log["theata"].append(timestamp[3])
+            log["V"][0].append(timestamp[4][0])
+            log["V"][1].append(timestamp[4][1])
+            log["VlT"].append(timestamp[5])
+            log["VrT"].append(timestamp[6])
 
-    for timestamp in log:
-        for key, value in timestamp.items():
-            if isinstance(value, list) or isinstance(value, tuple):
-                for i, subvalue in enumerate(value):
-                    _log[key][i].append(subvalue)
-            else:
-                _log[key].append(value)
-    _log = log
+    # Reformatting waypoints
+    if waypoints:
+        tmp = waypoints
+        waypoints = {"time": [], "x": [], "y": [], "theata": [], "V": [], "omega": [], "accL": [], "accR": []}
+        for waypoint in tmp:
+            waypoints["time"].append(float(waypoint[0]))
+            waypoints["x"].append(float(waypoint[1]))
+            waypoints["y"].append(float(waypoint[2]))
+            waypoints["theata"].append(float(waypoint[3]))
+            waypoints["V"].append(float(waypoint[4]))
+            waypoints["omega"].append(float(waypoint[5]))
+            waypoints["accL"].append(float(waypoint[6]))
+            waypoints["accR"].append(float(waypoint[7]))
 
     # Creating plots
     pose_plot = plt.subplot2grid((3, 3), (0, 0), 2, 2)
@@ -47,11 +59,12 @@ def log_graph(log, wheelRadius, DBM, waypoints=None):
 
     deltaTime = [t - log['time'][i-1] for i, t in enumerate(log['time'][1:])]
 
-    if 'Pose' in log:
+    if 'x' in log:
         points = np.array([log['x'], log['y']]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
         lc = LineCollection(segments, cmap=plt.get_cmap('hsv'))
-        lc.set_array(np.linspace(0, len(log['x']), len('x')))
+        lc.set_array(np.linspace(0, len(log['x']), len(log['x'])))
+
         pose_plot.add_collection(lc)
 
         theata_plot.plot(log['time'], [degrees(i) for i in log['theata']])
@@ -68,12 +81,10 @@ def log_graph(log, wheelRadius, DBM, waypoints=None):
                 omega.append((theata - log['theata'][i]) / deltaTime[i])
         omega_plot.plot(log['time'], [degrees(i) for i in omega])
 
-    if 'Phi' in log:
-        Vl, Vr = [0], [0]
-        for i, lPhi in enumerate(log['Phi'][0][1:]):
-            Vl.append(lPhi/360 * wheelCircumference / deltaTime[i])
-        for i, rPhi in enumerate(log['Phi'][1][1:]):
-            Vr.append(rPhi/360 * wheelCircumference / deltaTime[i])
+    if 'V' in log:
+
+        Vl = [i/360 * wheelCircumference for i in log['V'][0]]
+        Vr = [i/360 * wheelCircumference for i in log['V'][1]]
 
         Vl_plot.plot(log['time'], Vl)
         Vr_plot.plot(log['time'], Vr)
@@ -89,38 +100,42 @@ def log_graph(log, wheelRadius, DBM, waypoints=None):
         leftAcc_plot.plot(log['time'], AccL)
         rightAcc_plot.plot(log['time'], AccR)
 
+    if 'VlT' in log:
+        Vl_plot.plot(log['time'], log['VlT'])
+        Vr_plot.plot(log['time'], log['VrT'])
+
     if waypoints:
 
         if 'x' in waypoints:
-            points = np.array([log['waypoint']['x'], log['waypoint']['y']]).T.reshape(-1, 1, 2)
+            points = np.array([waypoints['x'], waypoints['y']]).T.reshape(-1, 1, 2)
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
             lc = LineCollection(segments, cmap=plt.get_cmap('hsv'))
-            lc.set_array(np.linspace(0, len(log['waypoint']['x']), len(log['waypoint']['x'])))
+            lc.set_array(np.linspace(0, len(waypoints['x']), len(waypoints['x'])))
             pose_plot.add_collection(lc)
 
         if 'V' in waypoints:
-            velocity_plot.plot(log['time'], log['waypoint']['V'])
+            velocity_plot.plot(waypoints['time'], waypoints['V'])
 
         if 'omega' in waypoints:
-            omega_plot.plot(log['time'], [degrees(i) for i in log['waypoint']['omega']])
+            omega_plot.plot(waypoints['time'], [degrees(i) for i in waypoints['omega']])
 
         if 'theata' in waypoints:
-            theata_plot.plot(log['time'], [degrees(i) for i in log['waypoint']['theata']])
+            theata_plot.plot(waypoints['time'], [degrees(i) for i in waypoints['theata']])
 
-        if 'leftAcc' in waypoints:
-            leftAcc_plot.plot(log['time'], log['waypoint']['leftAcc'])
+        if 'accL' in waypoints:
+            leftAcc_plot.plot(waypoints['time'], waypoints['accL'])
 
-        if 'rightAcc' in waypoints:
-            rightAcc_plot.plot(log['time'], log['waypoint']['rightAcc'])
+        if 'accR' in waypoints:
+            rightAcc_plot.plot(waypoints['time'], waypoints['accR'])
 
         if 'V' in waypoints and 'omega' in waypoints:
-            Vl_plot.plot(log['time'], [V - omega*halfDBM for V,
-                                       omega in zip(log['waypoint']['V'],
-                                                    log['waypoint']['omega'])])
+            Vl_plot.plot(waypoints['time'], [V - omega*halfDBM for V,
+                                             omega in zip(waypoints['V'],
+                                                          waypoints['omega'])])
 
-            Vr_plot.plot(log['time'], [V + omega*halfDBM for V,
-                                       omega in zip(log['waypoint']['V'],
-                                                    log['waypoint']['omega'])])
+            Vr_plot.plot(waypoints['time'], [V + omega*halfDBM for V,
+                                             omega in zip(waypoints['V'],
+                                                          waypoints['omega'])])
 
     pose_plot.autoscale_view()
     plt.subplots_adjust(left=0.03, bottom=0.04, right=0.985, top=0.96, wspace=0.125, hspace=0.5)
@@ -133,15 +148,18 @@ def main():
 
     wheelRadius = 4.075
     DBM = 9.7
-    pathname = '1'
+    pathname = '6'
 
-    path = os.path.dirname(os.getcwd()) + "FLL/"
+    path = os.path.dirname(os.getcwd()) + "\\FLL"
 
-    with open(f'{path}/Robot/Paths/{pathname}.csv', 'r') as f:
-        waypoints = [i for i in DictReader(f)]
+    with open(f'{path}\\Robot\\Paths\\{pathname}.path', 'r') as f:
+        waypoints = []
+        for spline in eval(f.read()):
+            for waypoint in spline:
+                waypoints.append(waypoint)
 
-    with open(path+'Data/Logs/runtime.log', 'r') as f:
-        log_graph([i for i in DictReader(f)], wheelRadius, DBM, waypoints)
+    with open(path+'\\Data\\Logs\\runtime.log', 'r') as f:
+        log_graph(eval(f.read()), wheelRadius, DBM, waypoints)
 
     print("Done!")
 
