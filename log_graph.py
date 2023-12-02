@@ -146,8 +146,8 @@ def main():
 
     print("Starting...")
 
-    wheelRadius = 4.075
-    DBM = 9.7
+    wheelRadius = 4.05
+    DBM = 8.75
     pathname = '6'
 
     path = os.path.dirname(os.getcwd()) + "\\FLL"
