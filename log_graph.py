@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from math import pi, degrees
+from json import loads
 import os
 
 
@@ -146,11 +147,15 @@ def main():
 
     print("Starting...")
 
-    wheelRadius = 4.05
-    DBM = 8.75
     pathname = '1'
 
     path = os.path.dirname(os.getcwd()) + "\\FLL"
+
+    with open(f'{path}\\Robot\\config.json', 'r') as f:
+        config = loads(f.read())
+
+    wheelRadius = config["wheel"]["radius"]
+    DBM = config["drivebase"]["DBM"]
 
     with open(f'{path}\\Robot\\Paths\\{pathname}.path', 'r') as f:
         waypoints = []
