@@ -163,7 +163,7 @@ def main():
             for waypoint in spline:
                 waypoints.append(waypoint)
 
-    with open(path+'\\Data\\Logs\\runtime.log', 'r') as f:
+    with open(path+f'\\Data\\Logs\\runtime{pathname}.log', 'r') as f:
         log_graph(eval(f.read()), wheelRadius, DBM, waypoints)
 
     print("Done!")
