@@ -147,7 +147,7 @@ def main():
 
     print("Starting...")
 
-    with open("currentSpline.txt", 'r') as f:
+    with open("currentPath.txt", 'r') as f:
         pathname = f.read()
 
     path = os.path.dirname(os.getcwd()) + "\\FLL"
